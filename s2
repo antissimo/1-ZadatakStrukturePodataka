@@ -1,0 +1,118 @@
+#define _CRT_SECURE_NO_WARNINGS
+#define duzineImenaIPrezimena 64
+#include<stdio.h>
+#include<malloc.h>
+#include<string.h>
+#include<stdlib.h>
+
+
+#pragma region Structs
+typedef struct Node* Position;
+struct Node {
+	int _multiplier;
+	int _exponent;
+	Position _next;
+};
+#pragma endregion
+#pragma region Function definitions
+int CountRows(char*);
+int InsertFromFile(char*, Position, int);
+int InsertSorted(int, int, Position);
+int InsertAfter(int, int, Position);
+int AddPolynomials(Position,Position);
+#pragma endregion
+int main() {
+	struct Node Head = {._exponent=NULL,._multiplier = NULL ,._next = NULL };
+	char fname[20] = "";
+	printf("Upisite iz kojeg filea zelite ucitati ljude\n");
+	scanf("%s", fname);
+	InsertFromFile(fname, &Head, CountRows(fname));
+}
+#pragma region Functions
+int CountRows(char* fileName) {
+	int cnt = 0;
+	char* buffer = malloc(1024);
+	if (buffer == NULL) {
+		return 1;
+	}
+	FILE* f;
+	f = fopen(fileName, "r");
+	while (1) {
+		if (fgets(buffer, 50, f) == '\0')
+			break;
+		cnt++;
+	}
+	fclose(f);
+	return cnt;
+}
+int InsertFromFile(char* fileName, Position Head, int cnt) {
+	FILE* f = NULL;
+	int i, multiplier, exponent;
+	char* buffer = malloc(1024);
+	f = fopen(fileName, "r");//Probaj risit sa sscanf i bufferon da nebi crashalo
+	if (f == NULL || cnt == 0) {
+		printf("Datoteka nije valjana\n");
+		return 1;
+	}
+	for (i = 0; i < cnt; i++) {
+		fgets(f, "%d %d", &multiplier, &exponent);
+		InsertSorted(multiplier, exponent, Head);
+	}
+}
+int InsertSorted(int multiplier,int exponent, Position p) {
+	while (p->_next != NULL && p->_next->_exponent<=exponent) {
+		p = p->_next;
+	}
+	if (p->_next != NULL) {
+		if (p->_next->_exponent == exponent) {
+			p->_next->_multiplier += multiplier;
+		}
+	}
+	else {
+		InsertAfter(multiplier, exponent, p);
+	}
+}
+int InsertAfter(int multiplier,int exponent, Position p){
+	if (!multiplier) {
+		return 0;
+	}
+	Position node = (Position)malloc(sizeof(struct Node));
+	if (node == NULL) {
+		return;
+	}
+	node->_multiplier = multiplier;
+	node->_exponent = exponent;
+	p->_next = node;
+	return 0;
+}
+int AddPolynomials(Position p1, Position p2) {
+	struct Node Head = { ._exponent = NULL,._multiplier = NULL ,._next = NULL };
+	while ((p1->_next != NULL && p1->_next->_exponent<= p2->_next->_exponent) && (p2->_next != NULL && p1->_next->_exponent >= p2->_next->_exponent)) {
+		if (p1->_next->_exponent > p2->_next->_exponent) {
+			InsertSorted(p2->_next->_multiplier, p2->_next->_exponent, &Head);
+			p2 = p2->_next;
+		}
+		else if (p1->_next->_exponent > p2->_next->_exponent) {
+			InsertSorted(p1->_next->_multiplier, p1->_next->_exponent, &Head);
+			p1 = p1->_next;
+		}
+		else {
+			InsertSorted((p1->_next->_multiplier+ p2->_next->_multiplier), p1->_next->_exponent, &Head);
+			p1 = p1->_next;
+			p2 = p2->_next;
+		}
+	}
+}
+int MultiplyPolynomials(Position p1, Position p2) {
+	struct Node Head = { ._exponent = NULL,._multiplier = NULL ,._next = NULL };
+	while (p2->_next != NULL) {
+		struct Node HeadTemp = { ._exponent = NULL,._multiplier = NULL ,._next = NULL };
+		while (p1->_next != NULL) {
+			InsertAfter(p2->_next->_multiplier, (p2->_next->_exponent+p1->_next->_exponent), &HeadTemp);
+		}
+		AddPolynomials(&Head, &HeadTemp);
+	}
+}
+#pragma endregion
+
+
